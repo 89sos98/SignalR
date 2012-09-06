@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using SignalR.Hubs;
 using SignalR.Infrastructure;
 
@@ -63,9 +64,12 @@ namespace SignalR
         {
             var connection = GetConnection(connectionName: null);
             var hubManager = _resolver.Resolve<IHubManager>();
+            var pipelineInvoker = _resolver.Resolve<IHubPipelineInvoker>();
             HubDescriptor hubDescriptor = hubManager.EnsureHub(hubName);
 
-            return new HubContext(new ClientProxy(connection, hubDescriptor.Name), 
+            Func<string, ClientHubInvocation, Task> send = (signal, value) => pipelineInvoker.Send(new HubOutgoingInvokerContext(connection, signal, value));
+
+            return new HubContext(new ClientProxy(send, hubDescriptor.Name), 
                                   new GroupManager(connection, hubName));
         }
 
